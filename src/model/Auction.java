@@ -1,6 +1,8 @@
 package model;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class Auction {
 
@@ -11,6 +13,8 @@ public class Auction {
 	private WinningBid winningBid;
 
 	private boolean hasEnded;
+
+	private List<HistoricalBid> bids = new ArrayList<HistoricalBid>();
 
 	public Auction(long id, long listngId, Money startingPrice, Date endTime) {
 		this.id = id;
@@ -31,6 +35,20 @@ public class Auction {
 		return hasEnded == false;
 	}
 
+	public void placeBidFor(Offer offer, Date currentTime) {
+		if (isFirstOffer()) {
+			placeABidForTheFirst(offer);
+		} else if (isBidderIncreasingMaximumBidToNew(offer)) {
+			winningBid = winningBid.raiseMaximumBidTo(offer.getMaximumBid());
+		} else if (winningBid.canBeExceededBy(offer.getMaximumBid())) {
+			List<WinningBid> newBids = new AutomaticBidder().generateNextSequenceOfBidsAfter(offer, winningBid);
+
+			for (WinningBid bid : newBids) {
+				place(bid);
+			}
+		}
+	}
+
 	public boolean isBidderIncreasingMaximumBidToNew(Offer offer) {
 		return winningBid.wasMadeBy(offer.getBidder())
 				&& offer.getMaximumBid().isGreaterThan(winningBid.getMaximumBid());
@@ -42,7 +60,7 @@ public class Auction {
 
 	public void placeABidForTheFirst(Offer offer) {
 		if (offer.getMaximumBid().isGreaterThanOrEqualTo(startingPrice)) {
-
+			place(new WinningBid(offer.getBidder(), offer.getMaximumBid(), startingPrice, offer.getTimeOfOffer()));
 		}
 	}
 
@@ -50,6 +68,9 @@ public class Auction {
 		if (!isFirstOffer() && winningBid.wasMadeBy(newBid.getBidder())) {
 			// TODO outbid event
 		}
+
+//		bids.add(new HistoricalBid(newBid.getBidder(), newBid.getMaximumBid(), newBid.getTimeOfOffer()));
+		bids.add(new HistoricalBid(newBid.getBidder(), newBid.getCurrentAuctionPrice().getAmount(), newBid.getTimeOfOffer()));
 
 		winningBid = newBid;
 
@@ -93,6 +114,22 @@ public class Auction {
 
 	public void setWinningBid(WinningBid winningBid) {
 		this.winningBid = winningBid;
+	}
+
+	public boolean isHasEnded() {
+		return hasEnded;
+	}
+
+	public void setHasEnded(boolean hasEnded) {
+		this.hasEnded = hasEnded;
+	}
+
+	public List<HistoricalBid> getBids() {
+		return bids;
+	}
+
+	public void setBids(List<HistoricalBid> bids) {
+		this.bids = bids;
 	}
 
 }

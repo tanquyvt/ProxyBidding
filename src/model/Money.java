@@ -3,6 +3,9 @@ package model;
 import java.math.BigDecimal;
 
 public class Money {
+	
+	private static int DECIMALS = 2;
+	private static int ROUNDING_MODE = BigDecimal.ROUND_HALF_EVEN;
 
 	private BigDecimal value;
 
@@ -11,11 +14,15 @@ public class Money {
 	}
 
 	public Money(String value) {
-		this.value = new BigDecimal(value);
+		this.value = round(new BigDecimal(value));
 	}
 
 	public Money add(Money money) {
 		return new Money((value.add(money.getValue()).toString()));
+	}
+	
+	public BigDecimal round(BigDecimal aNumber) {
+		return aNumber.setScale(DECIMALS, ROUNDING_MODE);
 	}
 
 	public boolean isGreaterThan(Money money) {
